@@ -1,11 +1,39 @@
-# codemods
+# @compiled/codemods
 
-> Codemods for easy migration from [styled components](https://styled-components.com/) and [emotion](https://emotion.sh/docs/introduction).
+Facilitates large scale code migrations through codemods that:
 
-## Available codemods
+-
+- lkdsfkdf
+-
 
-1. [styled-components-to-compiled](./src/transforms/styled-components-to-compiled)
-2. [emotion-to-compiled](./src/transforms/emotion-to-compiled)
+## Installation
+
+```bash
+npx @compiled/cli --preset codemods
+```
+
+**Codemods modify files in place, so make sure you can recover if it goes wrong!**
+
+## Updating
+
+When updating to a later version, make sure `@compiled/cli` is run with the same version.
+
+> Watch out for it being cached!
+
+For example when upgrading `@compiled/react` to `v0.6.0` where you've already used the CLI, on your next run explicitly set the version number:
+
+```bash
+npx @compiled/cli@0.6.0 --preset codemods
+```
+
+## Codemods
+
+The set of available codemods are:
+
+1. [emotion-to-compiled](./src/transforms/emotion-to-compiled)
+2. [styled-components-to-compiled](./src/transforms/styled-components-to-compiled)
+3. [styled-components-inner-ref-to-ref](./src/transforms/styled-components-inner-ref-to-ref)
+4. [tagged-template-expression-to-call-expression](./src/transforms/tagged-template-expression-to-call-expression)
 
 ## Plugins
 

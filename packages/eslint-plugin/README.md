@@ -31,5 +31,5 @@ module.exports = {
 ```
 
 Rules will where possible come with fixers. For individual rules see the [`rules`](./src/rules) folder,
-however it's strongly recommended to use the rules as above.
+however it's strongly recommended using the rules as above.
 You can read more about configuring eslint in their [documentation](https://eslint.org/docs/user-guide/configuring).
