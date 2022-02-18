@@ -65,7 +65,6 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
     },
     {
       filename: 'affixed-rules.ts',
-      only: true,
       code: `
         import { styled } from '@compiled/react';
 
@@ -90,7 +89,6 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
     },
     {
       filename: 'dynamic-values.ts',
-      // TODO too many quotes
       code: `
         import { styled } from '@compiled/react';
 
@@ -98,6 +96,30 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
           color: \${props => props.color};
           :hover {
             color: \${props => props.hoverColor};
+          }
+        \`;
+      `,
+      output: `
+        import { styled } from '@compiled/react';
+
+        styled.div({
+          "color": (props) => props.color,
+          ":hover": {
+            "color": (props) => props.hoverColor,
+          }
+        });
+      `,
+      errors: [{ messageId: 'noStyledTaggedTemplateExpression' }],
+    },
+    {
+      filename: 'no-trailing-semicolon-dynamic-values.ts',
+      code: `
+        import { styled } from '@compiled/react';
+
+        styled.div\`
+          color: \${props => props.color};
+          :hover {
+            color: \${props => props.hoverColor}
           }
         \`;
       `,
@@ -138,6 +160,30 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
       errors: [{ messageId: 'noStyledTaggedTemplateExpression' }],
     },
     {
+      filename: 'no-trailing-semicolon-destructured-dynamic-values.ts',
+      code: `
+        import { styled } from '@compiled/react';
+
+        styled.div\`
+          color: \${({ color }) => color};
+          :hover {
+            color: \${({ hoverColor }) => hoverColor}
+          }
+        \`;
+      `,
+      output: `
+        import { styled } from '@compiled/react';
+
+        styled.div({
+          "color": ({ color }) => color,
+          ":hover": {
+            "color": ({ hoverColor }) => hoverColor,
+          }
+        });
+      `,
+      errors: [{ messageId: 'noStyledTaggedTemplateExpression' }],
+    },
+    {
       filename: 'conditional-rules.ts',
       code: `
         import { styled } from '@compiled/react';
@@ -162,6 +208,30 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
       errors: [{ messageId: 'noStyledTaggedTemplateExpression' }],
     },
     {
+      filename: 'no-trailing-semicolon-conditional-rules.ts',
+      code: `
+        import { styled } from '@compiled/react';
+
+        styled.div\`
+          \${(props) => props.disabled ? 'opacity: 0.8' : 'opacity: 1'};
+          :hover {
+            \${(props) => props.disabled ? 'cursor: not-allowed' : 'cursor: auto'}
+          }
+        \`;
+      `,
+      output: `
+        import { styled } from '@compiled/react';
+
+        styled.div(
+          (props) => props.disabled ? 'opacity: 0.8' : 'opacity: 1',
+          {
+            ":hover": (props) => props.disabled ? 'cursor: not-allowed' : 'cursor: auto',
+          }
+        );
+      `,
+      errors: [{ messageId: 'noStyledTaggedTemplateExpression' }],
+    },
+    {
       filename: 'destructured-conditional-rules.ts',
       code: `
         import { styled } from '@compiled/react';
@@ -170,6 +240,31 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
           \${({ disabled }) => disabled ? 'opacity: 0.8' : 'opacity: 1'};
           :hover {
             \${({ disabled }) => disabled ? 'cursor: not-allowed' : 'cursor: auto'};
+          }
+        \`;
+      `,
+      output: `
+        import { styled } from '@compiled/react';
+
+        styled.div(
+          ({ disabled }) => disabled ? 'opacity: 0.8' : 'opacity: 1',
+          {
+            ":hover": ({ disabled }) => disabled ? 'cursor: not-allowed' : 'cursor: auto',
+          }
+        );
+      `,
+      errors: [{ messageId: 'noStyledTaggedTemplateExpression' }],
+    },
+    {
+      filename: 'no-trailing-semicolon-destructured-conditional-rules.ts',
+      only: true,
+      code: `
+        import { styled } from '@compiled/react';
+
+        styled.div\`
+          \${({ disabled }) => disabled ? 'opacity: 0.8' : 'opacity: 1'};
+          :hover {
+            \${({ disabled }) => disabled ? 'cursor: not-allowed' : 'cursor: auto'}
           }
         \`;
       `,

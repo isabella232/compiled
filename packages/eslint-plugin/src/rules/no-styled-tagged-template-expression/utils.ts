@@ -47,21 +47,39 @@ type CSSRule = {
 
 type Group = Declaration | Expression | CSSRule;
 
-type CurrentRule =
-  | {
-      parent: CurrentRule | undefined;
-      rule: CSSRule;
-    }
-  | undefined;
-
-const getDeclaration = (declaration: string) => {
+const getDeclaration = (declaration: string, expressions: ExpressionState[] = []): Declaration => {
   const [property, value] = declaration.split(':');
-  console.log('value', value);
+  const getValue = () => {
+    if (!value.trim().length && expressions.length) {
+      return expressions.map((e) => e.expression).join('');
+    }
+
+    if (expressions.length) {
+      // When there are expressions in the value, insert the expressions and wrap the value in a template literal
+      let val = declaration;
+      let offset = 0;
+      for (const { expression, pos } of expressions) {
+        const interpolation = '${' + expression + '}';
+        val =
+          val.substring(0, pos + offset) + interpolation + val.substring(pos + offset, val.length);
+        offset += interpolation.length;
+      }
+
+      return '`' + val.replace(property + ':', '').trim() + '`';
+    }
+
+    // @ts-expect-error TypeScript does not include strings in isNaN
+    if (!isNaN(value)) {
+      return parseFloat(value);
+    }
+
+    return value.trim();
+  };
 
   return {
+    type: 'declaration',
     property: property.trim(),
-    // @ts-expect-error TypeScript does not include strings in isNaN
-    value: isNaN(value) ? value.trim() : parseFloat(value),
+    value: getValue(),
   };
 };
 
@@ -101,10 +119,31 @@ const toArguments = (groups: Group[]) => {
   return args.length === 1 ? args[0] : args;
 };
 
+type CurrentRule =
+  | {
+      parent: CurrentRule | undefined;
+      rule: CSSRule;
+    }
+  | undefined;
+
+type ExpressionState = {
+  expression: string;
+  pos: number;
+};
+
+type State = {
+  chars: string;
+  currentRule: CurrentRule;
+  expressions: ExpressionState[];
+};
+
 export const toCallExpression = (source: SourceCode, template: ESTree.TemplateLiteral): string => {
   const groups: Group[] = [];
-  let currentRule: CurrentRule = undefined;
-  let chars = '';
+  const state: State = {
+    chars: '',
+    currentRule: undefined,
+    expressions: [],
+  };
 
   // @ts-ignore
   for (const [i, quasi] of template.quasis.entries()) {
@@ -113,63 +152,62 @@ export const toCallExpression = (source: SourceCode, template: ESTree.TemplateLi
         case '{':
           const rule: CSSRule = {
             type: 'rule',
-            selector: chars.trim(),
+            selector: state.chars.trim(),
             groups: [],
           };
 
           groups.push(rule);
-          currentRule = { parent: currentRule, rule };
-          chars = '';
+          state.chars = '';
+          state.currentRule = { parent: state.currentRule, rule };
+          state.expressions = [];
           break;
         case '}':
-          if (currentRule) {
-            if (chars.trim().length) {
+          if (state.currentRule) {
+            if (state.chars.trim().length) {
               // No semicolon was encountered, and we are at the end of the rule
-              currentRule.rule.groups.push({
-                type: 'declaration',
-                ...getDeclaration(chars),
-              });
-              chars = '';
+              state.currentRule.rule.groups.push(getDeclaration(state.chars, state.expressions));
+              state.chars = '';
             }
 
-            currentRule = currentRule.parent;
+            state.currentRule = state.currentRule.parent;
+            state.expressions = [];
           }
           break;
         case ';':
-          if (chars.trim().length) {
-            const expression = source.getText(template.expressions[i - 1]);
-            const group: Group =
-              expression === chars
-                ? { type: 'expression', expression: chars }
-                : { type: 'declaration', ...getDeclaration(chars) };
+          const group: Group =
+            // TODO combine logic?
+            !state.chars.trim().length && state.expressions
+              ? {
+                  type: 'expression',
+                  expression: state.expressions.map((e) => e.expression).join(''),
+                }
+              : getDeclaration(state.chars, state.expressions);
 
-            if (currentRule) {
-              currentRule.rule.groups.push(group);
-            } else {
-              groups.push(group);
-            }
-            chars = '';
+          if (state.currentRule) {
+            state.currentRule.rule.groups.push(group);
+          } else {
+            groups.push(group);
           }
+          state.chars = '';
+          state.expressions = [];
           break;
         default:
-          chars += char;
+          state.chars += char;
           break;
       }
     }
 
     if (i < template.expressions.length) {
-      const expression = source.getText(template.expressions[i]);
-      chars += expression;
+      state.expressions.push({
+        pos: state.chars.length - 1,
+        expression: source.getText(template.expressions[i]),
+      });
     }
   }
 
-  if (chars.trim().length) {
+  if (state.chars.trim().length) {
     // Add any leftover characters to the groups
-    // TODO expression?
-    groups.push({
-      type: 'declaration',
-      ...getDeclaration(chars),
-    });
+    groups.push(getDeclaration(state.chars, state.expressions));
   }
 
   return JSON.stringify(toArguments(groups), null, 2);
