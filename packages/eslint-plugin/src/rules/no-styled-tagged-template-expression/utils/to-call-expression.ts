@@ -1,32 +1,5 @@
-import type { Rule, Scope, SourceCode } from 'eslint';
+import type { SourceCode } from 'eslint';
 import type * as ESTree from 'estree';
-
-type Definition = Scope.Definition;
-type Node = Rule.Node;
-type Reference = Scope.Reference;
-
-const isStyledImportSpecifier = (def: Definition) =>
-  def.node.type === 'ImportSpecifier' &&
-  def.node.imported.type === 'Identifier' &&
-  def.node.imported.name === 'styled' &&
-  def.parent?.type === 'ImportDeclaration' &&
-  def.parent?.source.value === '@compiled/react';
-
-export const isStyled = (node: Node, references: Reference[]): boolean =>
-  (node.type === 'MemberExpression' &&
-    node.object.type === 'Identifier' &&
-    references.some(
-      (reference) =>
-        reference.identifier === node.object &&
-        reference.resolved?.defs.some(isStyledImportSpecifier)
-    )) ||
-  (node.type === 'CallExpression' &&
-    node.callee.type === 'Identifier' &&
-    references.some(
-      (reference) =>
-        reference.identifier === node.callee &&
-        reference.resolved?.defs.some(isStyledImportSpecifier)
-    ));
 
 type Declaration = {
   type: 'declaration';
@@ -68,8 +41,7 @@ const getDeclaration = (declaration: string, expressions: ExpressionState[] = []
       return '`' + val.replace(property + ':', '').trim() + '`';
     }
 
-    // @ts-expect-error TypeScript does not include strings in isNaN
-    if (!isNaN(value)) {
+    if (!isNaN(Number(value))) {
       return parseFloat(value);
     }
 
@@ -207,7 +179,7 @@ export const toCallExpression = (source: SourceCode, template: ESTree.TemplateLi
 
   if (state.chars.trim().length) {
     // Add any leftover characters to the groups
-    groups.push(getDeclaration(state.chars, state.expressions));
+    groups.push(getDeclaration(state.chars));
   }
 
   return JSON.stringify(toArguments(groups), null, 2);

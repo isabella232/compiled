@@ -34,12 +34,13 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
         styled.div\`
           color: blue;
           opacity: 0.8;
-          :hover { color: purple; opacity: 1 }
-          :visited { color: indigo }
+          :hover { color: purple; opacity: 1; }
+          :visited { color: indigo; }
           :focus {
             color: coral;
             opacity: 1;
           }
+          display: block;
         \`;
       `,
       output: `
@@ -58,7 +59,47 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
           ":focus": {
             "color": "coral",
             "opacity": 1
+          },
+          "display": "block"
+        });
+      `,
+      errors: [{ messageId: 'noStyledTaggedTemplateExpression' }],
+    },
+    {
+      filename: 'no-trailing-semicolon-multiline-static-rules.ts',
+      code: `
+        import { styled } from '@compiled/react';
+
+        styled.div\`
+          color: blue;
+          opacity: 0.8;
+          :hover { color: purple; opacity: 1 }
+          :visited { color: indigo }
+          :focus {
+            color: coral;
+            opacity: 1
           }
+          display: block
+        \`;
+      `,
+      output: `
+        import { styled } from '@compiled/react';
+
+        styled.div({
+          "color": "blue",
+          "opacity": 0.8,
+          ":hover": {
+            "color": "purple",
+            "opacity": 1
+          },
+          ":visited": {
+            "color": "indigo"
+          },
+          ":focus": {
+            "color": "coral",
+            "opacity": 1
+          },
+          "display": "block"
         });
       `,
       errors: [{ messageId: 'noStyledTaggedTemplateExpression' }],
@@ -300,6 +341,7 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
 //   'transforms an aliased styled component with a static rule'
 // );
 
+// TODO comments
 // TODO const Foo =
 // TODO export const Foo =
 // TODO export default
