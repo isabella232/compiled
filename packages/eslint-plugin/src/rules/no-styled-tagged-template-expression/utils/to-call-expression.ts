@@ -30,11 +30,10 @@ const getDeclaration = (declaration: string, expressions: ExpressionState[] = []
     if (expressions.length) {
       // When there are expressions in the value, insert the expressions and wrap the value in a template literal
       let val = declaration;
-      let offset = 0;
+      let offset = 1;
       for (const { expression, pos } of expressions) {
         const interpolation = '${' + expression + '}';
-        val =
-          val.substring(0, pos + offset) + interpolation + val.substring(pos + offset, val.length);
+        val = val.substring(0, pos + offset) + interpolation + val.substring(pos + offset);
         offset += interpolation.length;
       }
 
