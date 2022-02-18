@@ -21,7 +21,7 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
         import { styled } from '@compiled/react';
 
         styled.div({
-          "color": "blue"
+          color: "blue"
         });
       `,
       errors: [{ messageId: 'noStyledTaggedTemplateExpression' }],
@@ -47,20 +47,20 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
         import { styled } from '@compiled/react';
 
         styled.div({
-          "color": "blue",
-          "opacity": 0.8,
+          color: "blue",
+          opacity: 0.8,
           ":hover": {
-            "color": "purple",
-            "opacity": 1
+            color: "purple",
+            opacity: 1
           },
           ":visited": {
-            "color": "indigo"
+            color: "indigo"
           },
           ":focus": {
-            "color": "coral",
-            "opacity": 1
+            color: "coral",
+            opacity: 1
           },
-          "display": "block"
+          display: "block"
         });
       `,
       errors: [{ messageId: 'noStyledTaggedTemplateExpression' }],
@@ -86,20 +86,20 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
         import { styled } from '@compiled/react';
 
         styled.div({
-          "color": "blue",
-          "opacity": 0.8,
+          color: "blue",
+          opacity: 0.8,
           ":hover": {
-            "color": "purple",
-            "opacity": 1
+            color: "purple",
+            opacity: 1
           },
           ":visited": {
-            "color": "indigo"
+            color: "indigo"
           },
           ":focus": {
-            "color": "coral",
-            "opacity": 1
+            color: "coral",
+            opacity: 1
           },
-          "display": "block"
+          display: "block"
         });
       `,
       errors: [{ messageId: 'noStyledTaggedTemplateExpression' }],
@@ -122,8 +122,8 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
         const size = 8;
 
         styled.div({
-          "margin": \`\${size}px \${size * 3}px\`,
-          "padding": \`calc(\${size} * 2)\`
+          margin: \`\${size}px \${size * 3}px\`,
+          padding: \`calc(\${size} * 2)\`
         });
       `,
       errors: [{ messageId: 'noStyledTaggedTemplateExpression' }],
@@ -144,9 +144,9 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
         import { styled } from '@compiled/react';
 
         styled.div({
-          "color": (props) => props.color,
+          color: (props) => props.color,
           ":hover": {
-            "color": (props) => props.hoverColor,
+            color: (props) => props.hoverColor
           }
         });
       `,
@@ -168,9 +168,9 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
         import { styled } from '@compiled/react';
 
         styled.div({
-          "color": (props) => props.color,
+          color: (props) => props.color,
           ":hover": {
-            "color": (props) => props.hoverColor,
+            color: (props) => props.hoverColor,
           }
         });
       `,
@@ -192,9 +192,9 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
         import { styled } from '@compiled/react';
 
         styled.div({
-          "color": ({ color }) => color,
+          color: ({ color }) => color,
           ":hover": {
-            "color": ({ hoverColor }) => hoverColor,
+            color: ({ hoverColor }) => hoverColor,
           }
         });
       `,
@@ -216,9 +216,9 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
         import { styled } from '@compiled/react';
 
         styled.div({
-          "color": ({ color }) => color,
+          color: ({ color }) => color,
           ":hover": {
-            "color": ({ hoverColor }) => hoverColor,
+            color: ({ hoverColor }) => hoverColor,
           }
         });
       `,
@@ -226,13 +226,14 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
     },
     {
       filename: 'conditional-rules.ts',
+      only: true,
       code: `
         import { styled } from '@compiled/react';
 
         styled.div\`
-          \${(props) => props.disabled ? 'opacity: 0.8' : 'opacity: 1'};
+          \${(props) => props.disabled ? "opacity: 0.8" : 'opacity: 1'};
           :hover {
-            \${(props) => props.disabled ? 'cursor: not-allowed' : 'cursor: auto'};
+            \${(props) => props.disabled ? "cursor: not-allowed" : 'cursor: auto'};
           }
         \`;
       `,
@@ -240,9 +241,9 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
         import { styled } from '@compiled/react';
 
         styled.div(
-          (props) => props.disabled ? 'opacity: 0.8' : 'opacity: 1',
+          (props) => props.disabled ? "opacity: 0.8" : 'opacity: 1',
           {
-            ":hover": (props) => props.disabled ? 'cursor: not-allowed' : 'cursor: auto',
+            ":hover": (props) => props.disabled ? "cursor: not-allowed" : 'cursor: auto',
           }
         );
       `,
@@ -254,9 +255,9 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
         import { styled } from '@compiled/react';
 
         styled.div\`
-          \${(props) => props.disabled ? 'opacity: 0.8' : 'opacity: 1'};
+          \${(props) => props.disabled ? "opacity: 0.8" : 'opacity: 1'};
           :hover {
-            \${(props) => props.disabled ? 'cursor: not-allowed' : 'cursor: auto'}
+            \${(props) => props.disabled ? "cursor: not-allowed" : 'cursor: auto'}
           }
         \`;
       `,
@@ -264,9 +265,9 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
         import { styled } from '@compiled/react';
 
         styled.div(
-          (props) => props.disabled ? 'opacity: 0.8' : 'opacity: 1',
+          (props) => props.disabled ? "opacity: 0.8" : 'opacity: 1',
           {
-            ":hover": (props) => props.disabled ? 'cursor: not-allowed' : 'cursor: auto',
+            ":hover": (props) => props.disabled ? "cursor: not-allowed" : 'cursor: auto',
           }
         );
       `,
@@ -278,9 +279,9 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
         import { styled } from '@compiled/react';
 
         styled.div\`
-          \${({ disabled }) => disabled ? 'opacity: 0.8' : 'opacity: 1'};
+          \${({ disabled }) => disabled ? "opacity: 0.8" : 'opacity: 1'};
           :hover {
-            \${({ disabled }) => disabled ? 'cursor: not-allowed' : 'cursor: auto'};
+            \${({ disabled }) => disabled ? "cursor: not-allowed" : 'cursor: auto'};
           }
         \`;
       `,
@@ -288,9 +289,9 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
         import { styled } from '@compiled/react';
 
         styled.div(
-          ({ disabled }) => disabled ? 'opacity: 0.8' : 'opacity: 1',
+          ({ disabled }) => disabled ? "opacity: 0.8" : 'opacity: 1',
           {
-            ":hover": ({ disabled }) => disabled ? 'cursor: not-allowed' : 'cursor: auto',
+            ":hover": ({ disabled }) => disabled ? "cursor: not-allowed" : 'cursor: auto',
           }
         );
       `,
@@ -298,14 +299,13 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
     },
     {
       filename: 'no-trailing-semicolon-destructured-conditional-rules.ts',
-      only: true,
       code: `
         import { styled } from '@compiled/react';
 
         styled.div\`
-          \${({ disabled }) => disabled ? 'opacity: 0.8' : 'opacity: 1'};
+          \${({ disabled }) => disabled ? "opacity: 0.8" : 'opacity: 1'};
           :hover {
-            \${({ disabled }) => disabled ? 'cursor: not-allowed' : 'cursor: auto'}
+            \${({ disabled }) => disabled ? "cursor: not-allowed" : 'cursor: auto'}
           }
         \`;
       `,
@@ -313,9 +313,9 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
         import { styled } from '@compiled/react';
 
         styled.div(
-          ({ disabled }) => disabled ? 'opacity: 0.8' : 'opacity: 1',
+          ({ disabled }) => disabled ? "opacity: 0.8" : 'opacity: 1',
           {
-            ":hover": ({ disabled }) => disabled ? 'cursor: not-allowed' : 'cursor: auto',
+            ":hover": ({ disabled }) => disabled ? "cursor: not-allowed" : 'cursor: auto',
           }
         );
       `,
