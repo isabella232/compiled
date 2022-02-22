@@ -49,8 +49,12 @@ const generateBlock = (blocks: Block[], offset: number, level: number): string =
   return chars;
 };
 
-const generateArguments = (args: Argument[], offset: number, level): string => {
+const generateArguments = (args: Argument[], offset: number, level: number): string => {
   let chars = '';
+  if (level > 1 && args.length > 1) {
+    chars += '[';
+  }
+
   for (const [i, arg] of args.entries()) {
     switch (arg.type) {
       case 'block': {
@@ -78,6 +82,12 @@ const generateArguments = (args: Argument[], offset: number, level): string => {
     if (args.length > 1 && i < args.length - 1) {
       chars += ',';
     }
+  }
+
+  if (level > 1 && args.length > 1) {
+    chars += '\n';
+    chars += indent(offset, level - 1);
+    chars += ']';
   }
 
   return chars;

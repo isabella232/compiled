@@ -1,10 +1,69 @@
+import { basename } from 'path';
+
+import type { RuleTester } from 'eslint';
+
 import { tester } from '../../../test-utils';
 import { noStyledTaggedTemplateExpressionRule } from '../index';
 
-type CreateTestCases = {
-  filename: string;
+const createDeclarationTestCase = (
+  test: RuleTester.InvalidTestCase,
+  name: string,
+  prefix: string
+) => {
+  const replace = (str: string) => str.replace('styled.div', prefix + 'styled.div');
+
+  return {
+    ...test,
+    filename: `${basename(test.filename!)}-${name}.ts`,
+    code: replace(test.code),
+    output: replace(test.output!),
+  };
 };
 
+const createComposedComponentTestCase = (test: RuleTester.InvalidTestCase) => {
+  const replace = (str: string) => str.replace('styled.div', 'styled(Base)');
+
+  return {
+    ...test,
+    filename: `composed-${basename(test.filename!)}.ts`,
+    code: replace(test.code),
+    output: replace(test.output!),
+  };
+};
+
+const createAliasedTestCase = (test: RuleTester.InvalidTestCase) => {
+  const replace = (str: string) =>
+    str
+      .replace('{ styled }', '{ styled as styled2 }')
+      .replace('styled.div', 'styled2.div')
+      .replace('styled(Base)', 'styled2(Base)');
+
+  return {
+    ...test,
+    filename: `aliased-${basename(test.filename!)}.ts`,
+    code: replace(test.code),
+    output: replace(test.output!),
+  };
+};
+
+const createTestCases = (tests: RuleTester.InvalidTestCase[]) => {
+  return (
+    tests
+      .flatMap((t) => [
+        t,
+        createDeclarationTestCase(t, 'export-default-declaration', 'export default '),
+        createDeclarationTestCase(t, 'export-named-declaration', 'export const Component = '),
+        createDeclarationTestCase(t, 'variable-declaration', 'const Component = '),
+      ])
+      // For every test, create a composed variant
+      .flatMap((t) => [t, createComposedComponentTestCase(t)])
+      // For every test, create an aliased variant
+      .flatMap((t) => [t, createAliasedTestCase(t)])
+  );
+};
+
+// TODO Handle and test comments
+// TODO multi nested
 tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpressionRule, {
   valid: [
     `
@@ -13,7 +72,7 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
       styled.div\`color: blue\`;
     `,
   ],
-  invalid: [
+  invalid: createTestCases([
     {
       filename: 'single-line-static-rule.ts',
       code: `
@@ -336,53 +395,56 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
             \${(props) => props.disabled ? "cursor: not-allowed" : 'cursor: auto'};
             color: \${(props) => props.hoverColor};
           }
+        \`;
       `,
       output: `
         import { styled } from '@compiled/react';
 
-        styled.div([
+        styled.div(
           (props) => props.disabled ? "opacity: 0.8" : 'opacity: 1',
           {
-            color: \${(props) => props.color};
+            color: (props) => props.color,
             ":hover": [
-              (props) => props.disabled ? "cursor: no-allowed" : 'cursor: auto',
+              (props) => props.disabled ? "cursor: not-allowed" : 'cursor: auto',
               {
-                color: \${(props) => props.hoverColor};
+                color: (props) => props.hoverColor
               }
             ]
           }
-        ]);
+        );
       `,
       errors: [{ messageId: 'noStyledTaggedTemplateExpression' }],
     },
+    // TODO handle expressions without semicolon
     {
-      filename: 'no-trailing-semicolon-expression-before-dynamic-values.ts',
+      filename: 'no-trailing-semicolon-conditional-rules-before-dynamic-values.ts',
       code: `
         import { styled } from '@compiled/react';
 
         styled.div\`
-          \${(props) => props.disabled ? "opacity: 0.8" : 'opacity: 1'}
+          \${(props) => props.disabled ? "opacity: 0.8" : 'opacity: 1'};
           color: \${(props) => props.color};
           :hover {
-            \${(props) => props.disabled ? "cursor: not-allowed" : 'cursor: auto'}
+            \${(props) => props.disabled ? "cursor: not-allowed" : 'cursor: auto'};
             color: \${(props) => props.hoverColor}
           }
+        \`;
       `,
       output: `
         import { styled } from '@compiled/react';
 
-        styled.div([
+        styled.div(
           (props) => props.disabled ? "opacity: 0.8" : 'opacity: 1',
           {
-            color: \${(props) => props.color};
+            color: (props) => props.color,
             ":hover": [
-              (props) => props.disabled ? "cursor: no-allowed" : 'cursor: auto',
+              (props) => props.disabled ? "cursor: not-allowed" : 'cursor: auto',
               {
-                color: \${(props) => props.hoverColor};
+                color: (props) => props.hoverColor
               }
             ]
           }
-        ]);
+        );
       `,
       errors: [{ messageId: 'noStyledTaggedTemplateExpression' }],
     },
@@ -398,24 +460,25 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
             color: \${(props) => props.hoverColor};
             \${(props) => props.disabled ? "cursor: not-allowed" : 'cursor: auto'};
           }
+        \`;
       `,
       output: `
         import { styled } from '@compiled/react';
 
-        styled.div([
+        styled.div(
           {
-            color: \${(props) => props.color};
+            color: (props) => props.color
           },
           (props) => props.disabled ? "opacity: 0.8" : 'opacity: 1',
           {
             ":hover": [
               {
-                color: \${(props) => props.hoverColor};
-              }
-              (props) => props.disabled ? "cursor: no-allowed" : 'cursor: auto',
+                color: (props) => props.hoverColor
+              },
+              (props) => props.disabled ? "cursor: not-allowed" : 'cursor: auto'
             ]
           }
-        ]);
+        );
       `,
       errors: [{ messageId: 'noStyledTaggedTemplateExpression' }],
     },
@@ -428,53 +491,30 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
           color: \${(props) => props.color};
           \${(props) => props.disabled ? "opacity: 0.8" : 'opacity: 1'};
           :hover {
-            color: \${(props) => props.hoverColor}
+            color: \${(props) => props.hoverColor};
             \${(props) => props.disabled ? "cursor: not-allowed" : 'cursor: auto'}
           }
+        \`;
       `,
       output: `
         import { styled } from '@compiled/react';
 
-        styled.div([
+        styled.div(
           {
-            color: \${(props) => props.color};
+            color: (props) => props.color
           },
           (props) => props.disabled ? "opacity: 0.8" : 'opacity: 1',
           {
             ":hover": [
               {
-                color: \${(props) => props.hoverColor};
-              }
-              (props) => props.disabled ? "cursor: no-allowed" : 'cursor: auto',
+                color: (props) => props.hoverColor
+              },
+              (props) => props.disabled ? "cursor: not-allowed" : 'cursor: auto'
             ]
           }
-        ]);
+        );
       `,
       errors: [{ messageId: 'noStyledTaggedTemplateExpression' }],
     },
-  ],
+  ]),
 });
-
-// TODO add aliased parameterise test
-// defineInlineTest(
-//   { default: transformer, parser: 'tsx' },
-//   { plugins: [] },
-//   `
-//     import { styled as styled2 } from '@compiled/react';
-//
-//     styled2.div\`color: blue\`;
-//   `,
-//   `
-//     import { styled as styled2 } from '@compiled/react';
-//
-//     styled2.div({ color: 'blue' });
-//   `,
-//   'transforms an aliased styled component with a static rule'
-// );
-
-// TODO multi nested
-// TODO comments
-// TODO const Foo =
-// TODO export const Foo =
-// TODO export default
-// TODO composition styled()

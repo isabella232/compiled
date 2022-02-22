@@ -89,6 +89,17 @@ export const toArguments = (source: SourceCode, template: ESTree.TemplateLiteral
     }
   };
 
+  const addArguments = () => {
+    if (!state.chars.trim().length && state.expressions) {
+      addArgument({
+        type: 'expression',
+        expression: state.expressions.map((e) => e.expression).join(''),
+      });
+    } else {
+      addArgument(getDeclaration(state.chars, state.expressions));
+    }
+  };
+
   // @ts-ignore
   for (const [i, quasi] of template.quasis.entries()) {
     for (const char of quasi.value.raw) {
@@ -110,15 +121,9 @@ export const toArguments = (source: SourceCode, template: ESTree.TemplateLiteral
         }
 
         case '}': {
-          // No semicolon was encountered, and we are at the end of the rule
-          if (!state.chars.trim().length && state.expressions) {
-            addArgument({
-              type: 'expression',
-              expression: state.expressions.map((e) => e.expression).join(''),
-            });
-          } else {
-            addArgument(getDeclaration(state.chars, state.expressions));
-          }
+          // Add any leftover arguments that were not delimited
+          addArguments();
+
           state.chars = '';
           state.current = state.current.parent!;
           state.expressions = [];
@@ -127,14 +132,7 @@ export const toArguments = (source: SourceCode, template: ESTree.TemplateLiteral
         }
 
         case ';': {
-          if (!state.chars.trim().length && state.expressions) {
-            addArgument({
-              type: 'expression',
-              expression: state.expressions.map((e) => e.expression).join(''),
-            });
-          } else {
-            addArgument(getDeclaration(state.chars, state.expressions));
-          }
+          addArguments();
 
           state.chars = '';
           state.expressions = [];
@@ -155,11 +153,8 @@ export const toArguments = (source: SourceCode, template: ESTree.TemplateLiteral
     }
   }
 
-  if (state.chars.trim().length) {
-    // TODO test expression?
-    // Add any leftover characters to the groups
-    addArgument(getDeclaration(state.chars));
-  }
+  // Add any leftover arguments that were not delimited
+  addArguments();
 
   return args;
 };
