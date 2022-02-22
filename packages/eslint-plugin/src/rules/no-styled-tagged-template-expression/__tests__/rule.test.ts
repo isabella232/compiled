@@ -1,6 +1,10 @@
 import { tester } from '../../../test-utils';
 import { noStyledTaggedTemplateExpressionRule } from '../index';
 
+type CreateTestCases = {
+  filename: string;
+};
+
 tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpressionRule, {
   valid: [
     `
@@ -134,9 +138,9 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
         import { styled } from '@compiled/react';
 
         styled.div\`
-          color: \${props => props.color};
+          color: \${(props) => props.color};
           :hover {
-            color: \${props => props.hoverColor};
+            color: \${(props) => props.hoverColor};
           }
         \`;
       `,
@@ -158,9 +162,9 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
         import { styled } from '@compiled/react';
 
         styled.div\`
-          color: \${props => props.color};
+          color: \${(props) => props.color};
           :hover {
-            color: \${props => props.hoverColor}
+            color: \${(props) => props.hoverColor}
           }
         \`;
       `,
@@ -170,7 +174,7 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
         styled.div({
           color: (props) => props.color,
           ":hover": {
-            color: (props) => props.hoverColor,
+            color: (props) => props.hoverColor
           }
         });
       `,
@@ -194,7 +198,7 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
         styled.div({
           color: ({ color }) => color,
           ":hover": {
-            color: ({ hoverColor }) => hoverColor,
+            color: ({ hoverColor }) => hoverColor
           }
         });
       `,
@@ -218,7 +222,7 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
         styled.div({
           color: ({ color }) => color,
           ":hover": {
-            color: ({ hoverColor }) => hoverColor,
+            color: ({ hoverColor }) => hoverColor
           }
         });
       `,
@@ -226,7 +230,6 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
     },
     {
       filename: 'conditional-rules.ts',
-      only: true,
       code: `
         import { styled } from '@compiled/react';
 
@@ -243,7 +246,7 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
         styled.div(
           (props) => props.disabled ? "opacity: 0.8" : 'opacity: 1',
           {
-            ":hover": (props) => props.disabled ? "cursor: not-allowed" : 'cursor: auto',
+            ":hover": (props) => props.disabled ? "cursor: not-allowed" : 'cursor: auto'
           }
         );
       `,
@@ -267,7 +270,7 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
         styled.div(
           (props) => props.disabled ? "opacity: 0.8" : 'opacity: 1',
           {
-            ":hover": (props) => props.disabled ? "cursor: not-allowed" : 'cursor: auto',
+            ":hover": (props) => props.disabled ? "cursor: not-allowed" : 'cursor: auto'
           }
         );
       `,
@@ -291,7 +294,7 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
         styled.div(
           ({ disabled }) => disabled ? "opacity: 0.8" : 'opacity: 1',
           {
-            ":hover": ({ disabled }) => disabled ? "cursor: not-allowed" : 'cursor: auto',
+            ":hover": ({ disabled }) => disabled ? "cursor: not-allowed" : 'cursor: auto'
           }
         );
       `,
@@ -315,9 +318,137 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
         styled.div(
           ({ disabled }) => disabled ? "opacity: 0.8" : 'opacity: 1',
           {
-            ":hover": ({ disabled }) => disabled ? "cursor: not-allowed" : 'cursor: auto',
+            ":hover": ({ disabled }) => disabled ? "cursor: not-allowed" : 'cursor: auto'
           }
         );
+      `,
+      errors: [{ messageId: 'noStyledTaggedTemplateExpression' }],
+    },
+    {
+      filename: 'conditional-rules-before-dynamic-values.ts',
+      code: `
+        import { styled } from '@compiled/react';
+
+        styled.div\`
+          \${(props) => props.disabled ? "opacity: 0.8" : 'opacity: 1'};
+          color: \${(props) => props.color};
+          :hover {
+            \${(props) => props.disabled ? "cursor: not-allowed" : 'cursor: auto'};
+            color: \${(props) => props.hoverColor};
+          }
+      `,
+      output: `
+        import { styled } from '@compiled/react';
+
+        styled.div([
+          (props) => props.disabled ? "opacity: 0.8" : 'opacity: 1',
+          {
+            color: \${(props) => props.color};
+            ":hover": [
+              (props) => props.disabled ? "cursor: no-allowed" : 'cursor: auto',
+              {
+                color: \${(props) => props.hoverColor};
+              }
+            ]
+          }
+        ]);
+      `,
+      errors: [{ messageId: 'noStyledTaggedTemplateExpression' }],
+    },
+    {
+      filename: 'no-trailing-semicolon-expression-before-dynamic-values.ts',
+      code: `
+        import { styled } from '@compiled/react';
+
+        styled.div\`
+          \${(props) => props.disabled ? "opacity: 0.8" : 'opacity: 1'}
+          color: \${(props) => props.color};
+          :hover {
+            \${(props) => props.disabled ? "cursor: not-allowed" : 'cursor: auto'}
+            color: \${(props) => props.hoverColor}
+          }
+      `,
+      output: `
+        import { styled } from '@compiled/react';
+
+        styled.div([
+          (props) => props.disabled ? "opacity: 0.8" : 'opacity: 1',
+          {
+            color: \${(props) => props.color};
+            ":hover": [
+              (props) => props.disabled ? "cursor: no-allowed" : 'cursor: auto',
+              {
+                color: \${(props) => props.hoverColor};
+              }
+            ]
+          }
+        ]);
+      `,
+      errors: [{ messageId: 'noStyledTaggedTemplateExpression' }],
+    },
+    {
+      filename: 'conditional-rules-after-dynamic-values.ts',
+      code: `
+        import { styled } from '@compiled/react';
+
+        styled.div\`
+          color: \${(props) => props.color};
+          \${(props) => props.disabled ? "opacity: 0.8" : 'opacity: 1'};
+          :hover {
+            color: \${(props) => props.hoverColor};
+            \${(props) => props.disabled ? "cursor: not-allowed" : 'cursor: auto'};
+          }
+      `,
+      output: `
+        import { styled } from '@compiled/react';
+
+        styled.div([
+          {
+            color: \${(props) => props.color};
+          },
+          (props) => props.disabled ? "opacity: 0.8" : 'opacity: 1',
+          {
+            ":hover": [
+              {
+                color: \${(props) => props.hoverColor};
+              }
+              (props) => props.disabled ? "cursor: no-allowed" : 'cursor: auto',
+            ]
+          }
+        ]);
+      `,
+      errors: [{ messageId: 'noStyledTaggedTemplateExpression' }],
+    },
+    {
+      filename: 'no-trailing-semicolon-conditional-rules-after-dynamic-values.ts',
+      code: `
+        import { styled } from '@compiled/react';
+
+        styled.div\`
+          color: \${(props) => props.color};
+          \${(props) => props.disabled ? "opacity: 0.8" : 'opacity: 1'};
+          :hover {
+            color: \${(props) => props.hoverColor}
+            \${(props) => props.disabled ? "cursor: not-allowed" : 'cursor: auto'}
+          }
+      `,
+      output: `
+        import { styled } from '@compiled/react';
+
+        styled.div([
+          {
+            color: \${(props) => props.color};
+          },
+          (props) => props.disabled ? "opacity: 0.8" : 'opacity: 1',
+          {
+            ":hover": [
+              {
+                color: \${(props) => props.hoverColor};
+              }
+              (props) => props.disabled ? "cursor: no-allowed" : 'cursor: auto',
+            ]
+          }
+        ]);
       `,
       errors: [{ messageId: 'noStyledTaggedTemplateExpression' }],
     },
@@ -341,6 +472,7 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
 //   'transforms an aliased styled component with a static rule'
 // );
 
+// TODO multi nested
 // TODO comments
 // TODO const Foo =
 // TODO export const Foo =

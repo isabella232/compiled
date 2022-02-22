@@ -1,2 +1,3 @@
+export { generate } from './generate';
 export { isStyled } from './is-styled';
-export { toCallExpression } from './to-call-expression';
+export { toArguments } from './to-arguments';

@@ -1,6 +1,6 @@
 import type { Rule } from 'eslint';
 
-import { isStyled, toCallExpression } from './utils';
+import { generate, isStyled, toArguments } from './utils';
 
 type RuleFixer = Rule.RuleFixer;
 
@@ -30,18 +30,13 @@ export const noStyledTaggedTemplateExpressionRule: Rule.RuleModule = {
           *fix(fixer: RuleFixer) {
             const { quasi, tag } = node;
             const source = context.getSourceCode();
-            const indent = node.tag.loc!.start.column;
+            const start = node.tag.loc!.start.column;
+            const args = toArguments(source, quasi);
             yield fixer.insertTextBefore(
               node,
               source.getText(tag) +
-                '(' +
                 // Indent the arguments after the tagged template expression range
-                toCallExpression(source, quasi)
-                  .split('\n')
-                  .map((arg) => ' '.repeat(indent) + arg)
-                  .join('\n')
-                  .trim() +
-                ')'
+                generate(args, start)
             );
             yield fixer.remove(node);
           },
