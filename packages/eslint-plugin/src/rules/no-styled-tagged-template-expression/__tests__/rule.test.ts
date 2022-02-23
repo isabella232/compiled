@@ -46,21 +46,18 @@ const createAliasedTestCase = (test: RuleTester.InvalidTestCase) => {
   };
 };
 
-const createTestCases = (tests: RuleTester.InvalidTestCase[]) => {
-  return (
-    tests
-      .flatMap((t) => [
-        t,
-        createDeclarationTestCase(t, 'export-default-declaration', 'export default '),
-        createDeclarationTestCase(t, 'export-named-declaration', 'export const Component = '),
-        createDeclarationTestCase(t, 'variable-declaration', 'const Component = '),
-      ])
-      // For every test, create a composed variant
-      .flatMap((t) => [t, createComposedComponentTestCase(t)])
-      // For every test, create an aliased variant
-      .flatMap((t) => [t, createAliasedTestCase(t)])
-  );
-};
+const createTestCases = (tests: RuleTester.InvalidTestCase[]) =>
+  tests
+    .flatMap((t) => [
+      t,
+      createDeclarationTestCase(t, 'export-default-declaration', 'export default '),
+      createDeclarationTestCase(t, 'export-named-declaration', 'export const Component = '),
+      createDeclarationTestCase(t, 'variable-declaration', 'const Component = '),
+    ])
+    // For every test, create a composed variant
+    .flatMap((t) => [t, createComposedComponentTestCase(t)])
+    // For every test, create an aliased variant
+    .flatMap((t) => [t, createAliasedTestCase(t)]);
 
 // TODO Handle and test comments
 // TODO multi nested
@@ -102,6 +99,9 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
           :focus {
             color: coral;
             opacity: 1;
+            .foo {
+              color: pink;
+            }
           }
           display: block;
         \`;
@@ -121,7 +121,10 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
           },
           ":focus": {
             color: "coral",
-            opacity: 1
+            opacity: 1,
+            ".foo": {
+              color: "pink"
+            }
           },
           display: "block"
         });
@@ -141,6 +144,9 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
           :focus {
             color: coral;
             opacity: 1
+            .foo {
+              color: pink
+            }
           }
           display: block
         \`;
@@ -160,7 +166,10 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
           },
           ":focus": {
             color: "coral",
-            opacity: 1
+            opacity: 1,
+            ".foo": {
+              color: "pink"
+            }
           },
           display: "block"
         });

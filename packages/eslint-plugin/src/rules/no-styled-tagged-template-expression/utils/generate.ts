@@ -16,9 +16,9 @@ const createValue = (value: DeclarationValue) => {
 const indent = (offset: number, level: number) => ' '.repeat(offset + level * 2);
 
 const generateBlock = (blocks: Block[], offset: number, level: number): string => {
-  let chars = indent(offset, level - 1) + '{' + '\n';
+  let chars = '{' + '\n';
   for (const [i, block] of blocks.entries()) {
-    chars += indent(offset, level);
+    chars += indent(offset, level + 1);
 
     switch (block.type) {
       case 'declaration': {
@@ -44,7 +44,7 @@ const generateBlock = (blocks: Block[], offset: number, level: number): string =
     }
   }
 
-  chars += '\n' + indent(offset, level - 1) + '}';
+  chars += '\n' + indent(offset, level) + '}';
 
   return chars;
 };
@@ -62,7 +62,7 @@ const generateArguments = (args: Argument[], offset: number, level: number): str
           chars += generateBlock(arg.blocks, offset, level).trim();
         } else {
           chars += '\n';
-          chars += indent(offset, level);
+          chars += indent(offset, level + 1);
           chars += generateBlock(arg.blocks, offset, level + 1).trim();
         }
         break;
@@ -70,7 +70,7 @@ const generateArguments = (args: Argument[], offset: number, level: number): str
 
       case 'expression': {
         chars += '\n';
-        chars += indent(offset, level);
+        chars += indent(offset, level + 1);
         chars += arg.expression;
         break;
       }
@@ -86,7 +86,7 @@ const generateArguments = (args: Argument[], offset: number, level: number): str
 
   if (level > 1 && args.length > 1) {
     chars += '\n';
-    chars += indent(offset, level - 1);
+    chars += indent(offset, level);
     chars += ']';
   }
 
@@ -97,7 +97,7 @@ export const generate = (args: Argument[], offset: number, level = 0): string =>
   let chars = '';
 
   chars += '(';
-  chars += generateArguments(args, offset, level + 1);
+  chars += generateArguments(args, offset, level);
   if (args.length > 1) {
     chars += '\n';
     chars += indent(offset, level);
