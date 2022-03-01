@@ -2,23 +2,12 @@ import { basename } from 'path';
 
 import type { RuleTester } from 'eslint';
 
-import { tester } from '../../../test-utils';
+import {
+  createAliasedInvalidTestCase,
+  createDeclarationInvalidTestCases,
+  tester,
+} from '../../../test-utils';
 import { noStyledTaggedTemplateExpressionRule } from '../index';
-
-const createDeclarationTestCase = (
-  test: RuleTester.InvalidTestCase,
-  name: string,
-  prefix: string
-) => {
-  const replace = (str: string) => str.replace('styled.div', prefix + 'styled.div');
-
-  return {
-    ...test,
-    filename: `${basename(test.filename!)}-${name}.ts`,
-    code: replace(test.code),
-    output: replace(test.output!),
-  };
-};
 
 const createComposedComponentTestCase = (test: RuleTester.InvalidTestCase) => {
   const replace = (str: string) => str.replace('styled.div', 'styled(Base)');
@@ -31,33 +20,25 @@ const createComposedComponentTestCase = (test: RuleTester.InvalidTestCase) => {
   };
 };
 
-const createAliasedTestCase = (test: RuleTester.InvalidTestCase) => {
-  const replace = (str: string) =>
-    str
-      .replace('{ styled }', '{ styled as styled2 }')
-      .replace('styled.div', 'styled2.div')
-      .replace('styled(Base)', 'styled2(Base)');
+type InvalidTestCase = Omit<RuleTester.InvalidTestCase, 'errors'>;
 
-  return {
-    ...test,
-    filename: `aliased-${basename(test.filename!)}.ts`,
-    code: replace(test.code),
-    output: replace(test.output!),
-  };
-};
-
-const createTestCases = (tests: RuleTester.InvalidTestCase[]) =>
+const createInvalidTestCases = (tests: InvalidTestCase[]) =>
   tests
+    .map((t) => ({
+      ...t,
+      errors: [{ messageId: 'noStyledTaggedTemplateExpression' }],
+    }))
+    .flatMap((t) => [t, ...createDeclarationInvalidTestCases(t, 'Component', ['styled.div'])])
+    .flatMap((t) => [t, createComposedComponentTestCase(t)])
     .flatMap((t) => [
       t,
-      createDeclarationTestCase(t, 'export-default-declaration', 'export default '),
-      createDeclarationTestCase(t, 'export-named-declaration', 'export const Component = '),
-      createDeclarationTestCase(t, 'variable-declaration', 'const Component = '),
-    ])
-    // For every test, create a composed variant
-    .flatMap((t) => [t, createComposedComponentTestCase(t)])
-    // For every test, create an aliased variant
-    .flatMap((t) => [t, createAliasedTestCase(t)]);
+      createAliasedInvalidTestCase(t, (str: string) =>
+        str
+          .replace('{ styled }', '{ styled as styled2 }')
+          .replace('styled.div', 'styled2.div')
+          .replace('styled(Base)', 'styled2(Base)')
+      ),
+    ]);
 
 // TODO Handle and test comments
 // TODO multi nested
@@ -68,8 +49,13 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
 
       styled.div\`color: blue\`;
     `,
+    `
+      import { styled } from '@compiled/react-clone';
+
+      styled.div\`color: blue\`;
+    `,
   ],
-  invalid: createTestCases([
+  invalid: createInvalidTestCases([
     {
       filename: 'single-line-static-rule.ts',
       code: `
@@ -84,7 +70,6 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
           color: "blue"
         });
       `,
-      errors: [{ messageId: 'noStyledTaggedTemplateExpression' }],
     },
     {
       filename: 'multiline-static-rules.ts',
@@ -99,9 +84,6 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
           :focus {
             color: coral;
             opacity: 1;
-            .foo {
-              color: pink;
-            }
           }
           display: block;
         \`;
@@ -121,15 +103,11 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
           },
           ":focus": {
             color: "coral",
-            opacity: 1,
-            ".foo": {
-              color: "pink"
-            }
+            opacity: 1
           },
           display: "block"
         });
       `,
-      errors: [{ messageId: 'noStyledTaggedTemplateExpression' }],
     },
     {
       filename: 'no-trailing-semicolon-multiline-static-rules.ts',
@@ -144,9 +122,6 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
           :focus {
             color: coral;
             opacity: 1
-            .foo {
-              color: pink
-            }
           }
           display: block
         \`;
@@ -166,39 +141,59 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
           },
           ":focus": {
             color: "coral",
-            opacity: 1,
-            ".foo": {
-              color: "pink"
-            }
+            opacity: 1
           },
           display: "block"
         });
       `,
-      errors: [{ messageId: 'noStyledTaggedTemplateExpression' }],
     },
     {
-      filename: 'affixed-rules.ts',
+      filename: 'interpolated-declaration-values.ts',
       code: `
         import { styled } from '@compiled/react';
 
-        const size = 8;
+        const color = 'blue';
+        const opacity = 1;
 
         styled.div\`
-          margin: \${size}px \${size * 3}px;
-          padding: calc(\${size} * 2);
+          color: \${color};
+          opacity: \${opacity};
         \`;
       `,
       output: `
         import { styled } from '@compiled/react';
 
-        const size = 8;
+        const color = 'blue';
+        const opacity = 1;
 
         styled.div({
-          margin: \`\${size}px \${size * 3}px\`,
-          padding: \`calc(\${size} * 2)\`
+          color: color,
+          opacity: opacity
         });
       `,
-      errors: [{ messageId: 'noStyledTaggedTemplateExpression' }],
+    },
+    {
+      filename: 'affixed-declaration-values.ts',
+      code: `
+        import { styled } from '@compiled/react';
+
+        const spacing = 8;
+
+        styled.div\`
+          margin: \${spacing}px \${spacing * 3}px;
+          padding: calc(\${spacing} * 2);
+        \`;
+      `,
+      output: `
+        import { styled } from '@compiled/react';
+
+        const spacing = 8;
+
+        styled.div({
+          margin: \`\${spacing}px \${spacing * 3}px\`,
+          padding: \`calc(\${spacing} * 2)\`
+        });
+      `,
     },
     {
       filename: 'dynamic-values.ts',
@@ -222,7 +217,6 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
           }
         });
       `,
-      errors: [{ messageId: 'noStyledTaggedTemplateExpression' }],
     },
     {
       filename: 'no-trailing-semicolon-dynamic-values.ts',
@@ -246,7 +240,6 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
           }
         });
       `,
-      errors: [{ messageId: 'noStyledTaggedTemplateExpression' }],
     },
     {
       filename: 'destructured-dynamic-values.ts',
@@ -270,7 +263,6 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
           }
         });
       `,
-      errors: [{ messageId: 'noStyledTaggedTemplateExpression' }],
     },
     {
       filename: 'no-trailing-semicolon-destructured-dynamic-values.ts',
@@ -294,7 +286,6 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
           }
         });
       `,
-      errors: [{ messageId: 'noStyledTaggedTemplateExpression' }],
     },
     {
       filename: 'conditional-rules.ts',
@@ -318,7 +309,6 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
           }
         );
       `,
-      errors: [{ messageId: 'noStyledTaggedTemplateExpression' }],
     },
     {
       filename: 'no-trailing-semicolon-conditional-rules.ts',
@@ -342,7 +332,6 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
           }
         );
       `,
-      errors: [{ messageId: 'noStyledTaggedTemplateExpression' }],
     },
     {
       filename: 'destructured-conditional-rules.ts',
@@ -366,7 +355,6 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
           }
         );
       `,
-      errors: [{ messageId: 'noStyledTaggedTemplateExpression' }],
     },
     {
       filename: 'no-trailing-semicolon-destructured-conditional-rules.ts',
@@ -390,7 +378,6 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
           }
         );
       `,
-      errors: [{ messageId: 'noStyledTaggedTemplateExpression' }],
     },
     {
       filename: 'conditional-rules-before-dynamic-values.ts',
@@ -422,7 +409,6 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
           }
         );
       `,
-      errors: [{ messageId: 'noStyledTaggedTemplateExpression' }],
     },
     // TODO handle expressions without semicolon
     {
@@ -455,7 +441,6 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
           }
         );
       `,
-      errors: [{ messageId: 'noStyledTaggedTemplateExpression' }],
     },
     {
       filename: 'conditional-rules-after-dynamic-values.ts',
@@ -489,7 +474,6 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
           }
         );
       `,
-      errors: [{ messageId: 'noStyledTaggedTemplateExpression' }],
     },
     {
       filename: 'no-trailing-semicolon-conditional-rules-after-dynamic-values.ts',
@@ -523,7 +507,6 @@ tester.run('no-styled-tagged-template-expression', noStyledTaggedTemplateExpress
           }
         );
       `,
-      errors: [{ messageId: 'noStyledTaggedTemplateExpression' }],
     },
   ]),
 });

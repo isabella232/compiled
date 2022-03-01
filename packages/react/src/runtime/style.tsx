@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 
 import { analyzeCssInDev } from './dev-warnings';
 import { isNodeEnvironment } from './is-node';
@@ -14,7 +14,7 @@ interface StyleProps extends StyleSheetOpts {
   children: string[];
 }
 
-export default function Style(props: StyleProps): JSX.Element | null {
+function Style(props: StyleProps): JSX.Element | null {
   const inserted = useCache();
 
   if (process.env.NODE_ENV === 'development') {
@@ -67,3 +67,5 @@ export default function Style(props: StyleProps): JSX.Element | null {
 
   return null;
 }
+
+export default memo(Style, () => true);

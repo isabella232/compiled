@@ -2,7 +2,7 @@ import type { Rule } from 'eslint';
 
 type Node = Rule.Node;
 
-export const getOffset = (node: Node): number => {
+export const getTaggedTemplateExpressionOffset = (node: Node): number => {
   const { parent } = node;
   switch (parent.type || '') {
     case 'ExportDefaultDeclaration': {
